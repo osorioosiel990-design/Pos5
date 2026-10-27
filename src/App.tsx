@@ -1291,57 +1291,74 @@ function DailyClose({ cfg }: { cfg: Record<string, any> }) {
         <p className="text-xs" style={{ color: 'var(--text2)' }}>Los cierres se generan automáticamente al realizar ventas</p>
       </div>
 
-      <div className="card table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Fecha</th>
-              <th>Ventas</th>
-              <th>Total (CUP+USD)</th>
-              <th>🔄 Para Reponer</th>
-              <th>💰 Ganancia</th>
-              <th>Efectivo</th>
-              <th>Transferencia</th>
-              <th>Crédito</th>
-            </tr>
-          </thead>
-          <tbody>
-            {[...cierresDiarios].sort((a, b) => b.fecha - a.fecha).map(c => {
-              const totalCombinado = c.totalVentasCUP + (c.totalVentasUSD * tasa);
-              const reponerCombinado = c.costoVentasCUP + (c.costoVentasUSD * tasa);
-              const gananciaCombinada = c.gananciaBrutaCUP + (c.gananciaBrutaUSD * tasa);
-              
-              return (
-                <tr key={c.id}>
-                  <td className="text-xs">{fmtDate(c.fecha)}</td>
-                  <td>{c.ventasIds.length}</td>
-                  <td className="font-semibold">{fmt(totalCombinado)} CUP</td>
-                  <td style={{ color: 'var(--err)' }}>{fmt(reponerCombinado)} CUP</td>
-                  <td style={{ color: 'var(--ok)' }} className="font-bold">{fmt(gananciaCombinada)} CUP</td>
-                  <td>
-                    <div className="text-xs">
-                      <div>{fmt(c.efectivoCUP)} CUP</div>
-                      <div>{fmt(c.efectivoUSD)} USD</div>
-                    </div>
-                  </td>
-                  <td>
-                    <div className="text-xs">
-                      <div>{fmt(c.transferenciaCUP)} CUP</div>
-                      <div>{fmt(c.transferenciaUSD)} USD</div>
-                    </div>
-                  </td>
-                  <td>
-                    <div className="text-xs">
-                      <div>{fmt(c.creditoCUP)} CUP</div>
-                      <div>{fmt(c.creditoUSD)} USD</div>
-                    </div>
-                  </td>
+      {cierresDiarios.length > 0 && (
+        <>
+          {/* Mostrar el cierre más reciente con tarjetas */}
+          {(() => {
+            const cierreHoy = cierresDiarios.find(c => {
+              const hoy = new Date();
+              hoy.setHours(0, 0, 0, 0);
+              return c.fecha === hoy.getTime();
+            }) || cierresDiarios.sort((a, b) => b.fecha - a.fecha)[0];
+            
+            const ventasTotalCUP = cierreHoy.totalVentasCUP + (cierreHoy.totalVentasUSD * tasa);
+            const gananciaCombinada = cierreHoy.gananciaBrutaCUP + (cierreHoy.gananciaBrutaUSD * tasa);
+            
+            return (
+              <>
+                <div className="card p-4 mb-4" style={{ borderLeft: '4px solid var(--primary)' }}>
+                  <p className="text-sm font-semibold">📅 {fmtDate(cierreHoy.fecha)}</p>
+                  <p className="text-xs" style={{ color: 'var(--text2)' }}>{cierreHoy.ventasIds.length} ventas realizadas</p>
+                </div>
+
+                {/* Totales combinados CUP + USD - Igual que Métricas */}
+                <div className="grid-3 mb-6">
+                  <div className="kpi"><div className="kpi-label">📊 Ventas</div><div className="kpi-value">{fmt(ventasTotalCUP)}</div><p className="equivalent">≈ {fmt(toUSD(ventasTotalCUP, tasa))} USD</p></div>
+                  <div className="kpi" style={{ borderLeftColor: 'var(--warn)' }}><div className="kpi-label">💰 Ganancia</div><div className="kpi-value">{fmt(gananciaCombinada)}</div><p className="equivalent">≈ {fmt(toUSD(gananciaCombinada, tasa))} USD</p></div>
+                  <div className="kpi" style={{ borderLeftColor: 'var(--info)' }}>
+                    <div className="kpi-label">💵 Caja</div>
+                    <div className="text-sm font-bold">{fmt(cierreHoy.cajaCUP)} CUP</div>
+                    <div className="text-sm font-bold">{fmt(cierreHoy.cajaUSD)} USD</div>
+                  </div>
+                </div>
+              </>
+            );
+          })()}
+
+          {/* Tabla con todos los cierres */}
+          <div className="card table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Ventas</th>
+                  <th>Total (CUP+USD)</th>
+                  <th>💰 Ganancia</th>
+                  <th>💵 Caja CUP</th>
+                  <th>💵 Caja USD</th>
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+              </thead>
+              <tbody>
+                {[...cierresDiarios].sort((a, b) => b.fecha - a.fecha).map(c => {
+                  const totalCombinado = c.totalVentasCUP + (c.totalVentasUSD * tasa);
+                  const gananciaCombinada = c.gananciaBrutaCUP + (c.gananciaBrutaUSD * tasa);
+                  
+                  return (
+                    <tr key={c.id}>
+                      <td className="text-xs">{fmtDate(c.fecha)}</td>
+                      <td>{c.ventasIds.length}</td>
+                      <td className="font-semibold">{fmt(totalCombinado)} CUP</td>
+                      <td style={{ color: 'var(--ok)' }} className="font-bold">{fmt(gananciaCombinada)} CUP</td>
+                      <td>{fmt(c.cajaCUP)} CUP</td>
+                      <td>{fmt(c.cajaUSD)} USD</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
       {cierresDiarios.length === 0 && <p className="text-center py-8" style={{ color: 'var(--text2)' }}>Sin cierres diarios registrados</p>}
     </div>
   );
@@ -1430,32 +1447,39 @@ function WeeklyClose({ cfg }: { cfg: Record<string, any> }) {
         <p className="text-xs" style={{ color: 'var(--text2)' }}>{ventasSemana.length} ventas realizadas</p>
       </div>
 
-      {/* Totales combinados CUP + USD */}
+      {/* Totales combinados CUP + USD - Igual que Métricas */}
       {(() => {
         const ventasTotalCUP = totalCUP + (totalUSD * tasa);
-        const reponerTotalCUP = inversionSemana + (inversionSemanaUSD * tasa);
-        const gananciaTotalCUP = ganancia + (gananciaUSD * tasa);
         
         return (
           <>
             <div className="grid-3 mb-6">
-              <div className="kpi"><div className="kpi-label">📊 Ventas Semana</div><div className="kpi-value">{ventasSemana.length}</div><p className="equivalent">{fmt(ventasTotalCUP)} CUP ≈ {fmt(toUSD(ventasTotalCUP, tasa))} USD</p></div>
-              {cfg.mostrarInversion !== false && (
-                <div className="kpi" style={{ borderLeftColor: 'var(--err)' }}><div className="kpi-label">🔄 Para Reponer</div><div className="kpi-value">{fmt(reponerTotalCUP)} CUP</div><p className="equivalent">≈ {fmt(toUSD(reponerTotalCUP, tasa))} USD</p></div>
+              <div className="kpi"><div className="kpi-label">📊 Ventas</div><div className="kpi-value">{fmt(ventasTotalCUP)}</div><p className="equivalent">≈ {fmt(toUSD(ventasTotalCUP, tasa))} USD</p></div>
+              {cfg.mostrarGanancia !== false && (
+                <div className="kpi" style={{ borderLeftColor: 'var(--warn)' }}><div className="kpi-label">💰 Ganancia</div><div className="kpi-value">{fmt(ganancia)}</div><p className="equivalent">≈ {fmt(toUSD(ganancia, tasa))} USD</p></div>
               )}
               {cfg.mostrarGanancia !== false && (
-                <div className="kpi" style={{ borderLeftColor: 'var(--warn)' }}><div className="kpi-label">💰 Ganancia Bruta</div><div className="kpi-value">{fmt(gananciaTotalCUP)} CUP</div><p className="equivalent">≈ {fmt(toUSD(gananciaTotalCUP, tasa))} USD</p></div>
+                <div className="kpi" style={{ borderLeftColor: utilidad >= 0 ? 'var(--ok)' : 'var(--err)' }}><div className="kpi-label">💰 Ganancia Neta</div><div className="kpi-value">{fmt(utilidad)}</div><p className="equivalent">(Ganancia - Gastos)</p></div>
               )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              {cfg.mostrarGanancia !== false && (
-                <div className="kpi" style={{ borderLeftColor: utilidad >= 0 ? 'var(--ok)' : 'var(--err)' }}><div className="kpi-label">💰 Ganancia Neta</div><div className="kpi-value">{fmt(utilidad)} CUP</div><p className="equivalent">(Ganancia - Gastos {fmt(gastosTotal)})</p></div>
-              )}
-              {(cfg.mostrarCajaCUP !== false || cfg.mostrarCajaUSD !== false) && (
-                <div className="kpi" style={{ borderLeftColor: 'var(--info)' }}><div className="kpi-label">💵 Caja Semanal</div><div className="text-sm font-bold">{fmt(cajaCUP)} CUP</div><div className="text-sm font-bold">{fmt(cajaUSD)} USD</div></div>
-              )}
-            </div>
+            {/* Solo agregar caja */}
+            {(cfg.mostrarCajaCUP !== false || cfg.mostrarCajaUSD !== false) && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                {cfg.mostrarCajaCUP !== false && (
+                  <div className="kpi" style={{ borderLeftColor: 'var(--ok)' }}>
+                    <div className="kpi-label">💵 Caja CUP</div>
+                    <div className="kpi-value">{fmt(cajaCUP)} CUP</div>
+                  </div>
+                )}
+                {cfg.mostrarCajaUSD !== false && (
+                  <div className="kpi" style={{ borderLeftColor: 'var(--info)' }}>
+                    <div className="kpi-label">💵 Caja USD</div>
+                    <div className="kpi-value">{fmt(cajaUSD)} USD</div>
+                  </div>
+                )}
+              </div>
+            )}
           </>
         );
       })()}
@@ -1731,7 +1755,7 @@ function Metrics({ cfg }: { cfg: Record<string, any> }) {
         
         return (
           <div className="grid-3 mb-6">
-            <div className="kpi"><div className="kpi-label">📊 Ventas</div><div className="kpi-value">{ventasSemana.length}</div><p className="equivalent">{fmt(ventasTotalCUP)} CUP ≈ {fmt(toUSD(ventasTotalCUP, tasa))} USD</p></div>
+            <div className="kpi"><div className="kpi-label">📊 Ventas</div><div className="kpi-value">{fmt(ventasTotalCUP)}</div><p className="equivalent">≈ {fmt(toUSD(ventasTotalCUP, tasa))} USD</p></div>
             {cfg.mostrarGanancia !== false && (
               <div className="kpi" style={{ borderLeftColor: 'var(--warn)' }}><div className="kpi-label">💰 Ganancia</div><div className="kpi-value">{fmt(ganancia)}</div><p className="equivalent">≈ {fmt(toUSD(ganancia, tasa))} USD</p></div>
             )}
