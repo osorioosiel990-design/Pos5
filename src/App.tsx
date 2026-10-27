@@ -379,7 +379,7 @@ function Inventory({ cfg }: { cfg: Record<string, any> }) {
   const inversionCUP = filtered.reduce((s, p) => s + (p.stock * p.pep), 0);
   const inversionUSD = toUSD(inversionCUP, tasa);
 
-  const openNew = () => { setEditItem(null); setForm({ nombre: '', codigo: '', categoria: cfg.categorias?.[0] || '', unidad: cfg.unidades?.[0] || 'Unidad', compraCUP: 0, compraUSD: 0, ventaCUP: 0, ventaUSD: 0, pep: 0, pepUSD: 0, stock: 0, stockTienda: 0, stockAlmacen: 0, min: 0, foto: '', precioFijoCUP: false, precioFijoUSD: false }); setModal(true); };
+  const openNew = () => { setEditItem(null); setForm({ nombre: '', categoria: cfg.categorias?.[0] || '', unidad: cfg.unidades?.[0] || 'Unidad', compraCUP: 0, compraUSD: 0, ventaCUP: 0, ventaUSD: 0, pep: 0, pepUSD: 0, stock: 0, stockTienda: 0, stockAlmacen: 0, min: 0, foto: '', precioFijoCUP: false, precioFijoUSD: false }); setModal(true); };
   const openEdit = (p: Producto) => { setEditItem(p); setForm({ ...p }); setModal(true); };
 
   const handleVentaCUP = (val: number) => setForm(f => ({ ...f, ventaCUP: val, ventaUSD: toUSD(val, tasa) }));
@@ -489,7 +489,7 @@ function Inventory({ cfg }: { cfg: Record<string, any> }) {
             <div key={p.id} className="product-card">
               {p.foto ? <img src={p.foto} alt={p.nombre} /> : <div style={{ height: 100, background: 'var(--bg3)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>📦</div>}
               <h4 className="font-semibold text-sm mt-2 truncate">{p.nombre}</h4>
-              <p className="text-xs" style={{ color: 'var(--text2)' }}>{p.codigo || p.categoria}</p>
+              <p className="text-xs" style={{ color: 'var(--text2)' }}>{p.categoria}</p>
               <div className="flex justify-between items-center mt-2">
                 <span className="text-sm font-bold" style={{ color: 'var(--primary)' }}>{fmt(p.ventaCUP)}</span>
                 {statusBadge(p)}
@@ -505,16 +505,15 @@ function Inventory({ cfg }: { cfg: Record<string, any> }) {
           ))}
         </div>
       ) : (
-        <div className="card table-wrap"><table><thead><tr><th>Producto</th><th>Código</th><th>Cat.</th><th>🏪 Tienda</th><th>📦 Almacén</th><th>Total</th><th>PEP CUP</th><th>Venta CUP</th><th>Inv CUP</th><th>Inv USD</th><th>Lotes</th><th>Estado</th><th></th></tr></thead><tbody>{filtered.map(p => {
+        <div className="card table-wrap"><table><thead><tr><th>Producto</th><th>Cat.</th><th>🏪 Tienda</th><th>📦 Almacén</th><th>Total</th><th>PEP CUP</th><th>Venta CUP</th><th>Inv CUP</th><th>Inv USD</th><th>Lotes</th><th>Estado</th><th></th></tr></thead><tbody>{filtered.map(p => {
           const lotesProducto = lotes.filter(l => l.productoId === p.id && l.cantidadRestante > 0);
-          return (<tr key={p.id}><td className="font-medium">{p.nombre}</td><td className="font-mono text-xs">{p.codigo}</td><td>{p.categoria}</td><td className="font-bold" style={{ color: 'var(--ok)' }}>{p.stockTienda || 0}</td><td className="font-bold" style={{ color: 'var(--info)' }}>{p.stockAlmacen || 0}</td><td>{p.stock}</td><td>{fmt(p.pep)}</td><td>{fmt(p.ventaCUP)}</td><td>{fmt(p.stock * p.pep)}</td><td>{fmt(toUSD(p.stock * p.pep, tasa))}</td><td>{lotesProducto.length > 0 ? <button className="btn btn-info btn-sm" onClick={() => setLotesModal(p)}>{lotesProducto.length} lote{lotesProducto.length > 1 ? 's' : ''}</button> : <span className="text-xs" style={{ color: 'var(--text2)' }}>Sin lotes</span>}</td><td>{statusBadge(p)}</td><td><button className="btn btn-ghost btn-sm" onClick={() => openEdit(p)}>✏️</button> <button className="btn btn-warn btn-sm" onClick={() => { setMermaModal(p); setMermaQty(0); }}>⚠️</button> <button className="btn btn-ghost btn-sm" onClick={() => del(p)}>🗑️</button></td></tr>);
+          return (<tr key={p.id}><td className="font-medium">{p.nombre}</td><td>{p.categoria}</td><td className="font-bold" style={{ color: 'var(--ok)' }}>{p.stockTienda || 0}</td><td className="font-bold" style={{ color: 'var(--info)' }}>{p.stockAlmacen || 0}</td><td>{p.stock}</td><td>{fmt(p.pep)}</td><td>{fmt(p.ventaCUP)}</td><td>{fmt(p.stock * p.pep)}</td><td>{fmt(toUSD(p.stock * p.pep, tasa))}</td><td>{lotesProducto.length > 0 ? <button className="btn btn-info btn-sm" onClick={() => setLotesModal(p)}>{lotesProducto.length} lote{lotesProducto.length > 1 ? 's' : ''}</button> : <span className="text-xs" style={{ color: 'var(--text2)' }}>Sin lotes</span>}</td><td>{statusBadge(p)}</td><td><button className="btn btn-ghost btn-sm" onClick={() => openEdit(p)}>✏️</button> <button className="btn btn-warn btn-sm" onClick={() => { setMermaModal(p); setMermaQty(0); }}>⚠️</button> <button className="btn btn-ghost btn-sm" onClick={() => del(p)}>🗑️</button></td></tr>);
         })}</tbody></table></div>
       )}
 
       <Modal open={modal} onClose={() => setModal(false)} title={editItem ? 'Editar Producto' : 'Nuevo Producto'} wide>
         <div className="grid grid-cols-2 gap-3">
           <div className="col-span-2"><label className="text-xs font-medium">Nombre *</label><input className="input" value={form.nombre || ''} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} /></div>
-          <div><label className="text-xs font-medium">Código</label><input className="input" value={form.codigo || ''} onChange={e => setForm(f => ({ ...f, codigo: e.target.value }))} /></div>
           <div><label className="text-xs font-medium">Categoría</label><select className="input" value={form.categoria || ''} onChange={e => setForm(f => ({ ...f, categoria: e.target.value }))}>{(cfg.categorias || []).map((c: string) => <option key={c}>{c}</option>)}</select></div>
           <div><label className="text-xs font-medium">Unidad</label><select className="input" value={form.unidad || ''} onChange={e => setForm(f => ({ ...f, unidad: e.target.value }))}>{(cfg.unidades || []).map((u: string) => <option key={u}>{u}</option>)}</select></div>
           <div><label className="text-xs font-medium">Stock en Tienda</label><input type="number" className="input" value={numVal(form.stockTienda)} onChange={e => setForm(f => ({ ...f, stockTienda: e.target.value === '' ? 0 : +e.target.value }))} /></div>
