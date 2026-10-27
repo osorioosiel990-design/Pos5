@@ -919,7 +919,9 @@ function POS({ cfg }: { cfg: Record<string, any> }) {
         if (moneda === 'CUP') {
           costoTotalCUP += usarDelLote * lote.precioCompraCUP;
         } else {
-          costoTotalUSD += usarDelLote * lote.precioCompraUSD;
+          // Si el lote no tiene precioCompraUSD, calcularlo desde precioCompraCUP
+          const precioUSD = lote.precioCompraUSD > 0 ? lote.precioCompraUSD : toUSD(lote.precioCompraCUP, tasa);
+          costoTotalUSD += usarDelLote * precioUSD;
         }
         
         lote.cantidadRestante -= usarDelLote;
