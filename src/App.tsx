@@ -564,7 +564,23 @@ function Inventory({ cfg }: { cfg: Record<string, any> }) {
     
     const newStockTotal = newStockTienda + newStockAlmacen;
     await dbPut('productos', { ...mermaModal, stock: newStockTotal, stockTienda: newStockTienda, stockAlmacen: newStockAlmacen });
-    showToast(`Merma: ${mermaQty} ${mermaModal.unidad} de ${mermaUbicacion === 'tienda' ? 'tienda' : 'almacén'}`, 'warn');
+    
+    // Calcular pérdida (costo del producto)
+    const perdidaCUP = mermaQty * (mermaModal.pep || 0);
+    const perdidaUSD = mermaQty * (mermaModal.pepUSD || 0);
+    
+    // Registrar como gasto (pérdida por merma)
+    await dbAdd('gastos', {
+      concepto: `Merma: ${mermaModal.nombre} (${mermaQty} ${mermaModal.unidad})`,
+      categoria: 'Merma',
+      fecha: Date.now(),
+      nota: `Pérdida por producto defectuoso/deteriorado en ${mermaUbicacion === 'tienda' ? 'tienda' : 'almacén'}`,
+      montoCUP: perdidaCUP,
+      montoUSD: perdidaUSD,
+      creado: Date.now()
+    } as Gasto);
+    
+    showToast(`Merma registrada: ${mermaQty} ${mermaModal.unidad}. Pérdida: ${fmt(perdidaCUP)} CUP`, 'warn');
     setMermaModal(null); setMermaQty(0); load();
   };
 
@@ -2211,7 +2227,7 @@ function Expenses({ cfg }: { cfg: Record<string, any> }) {
   const [editItem, setEditItem] = useState<Gasto | null>(null);
   const [form, setForm] = useState<Partial<Gasto>>({});
   const tasa = cfg.tasa || 350;
-  const cats = ['Salarios', 'Alquiler', 'Electricidad', 'Internet', 'Combustible', 'Mantenimiento', 'Otros'];
+  const cats = ['Salarios', 'Alquiler', 'Electricidad', 'Internet', 'Combustible', 'Mantenimiento', 'Merma', 'Otros'];
 
   const load = useCallback(async () => { setGastos(await dbGetAll<Gasto>('gastos')); }, []);
   useEffect(() => { load(); }, [load]);
