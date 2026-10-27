@@ -220,16 +220,28 @@ function Dashboard({ cfg, setPage }: { cfg: Record<string, any>; setPage: (p: Pa
         </div>
       )}
 
-      <div className="grid-4 mb-6">
-        <div className="kpi"><div className="kpi-label">Ventas Hoy</div><div className="kpi-value">{ventasHoy.length}</div><p className="equivalent">CUP: {fmt(totalHoyCUP)} | USD: {fmt(totalHoyUSD)}</p></div>
-        {cfg.mostrarGanancia !== false && (
-          <div className="kpi" style={{ borderLeftColor: 'var(--warn)' }}><div className="kpi-label">💰 Ganancia Hoy</div><div className="kpi-value">{fmt(gananciaHoyCUP)} CUP</div><p className="equivalent">≈ {fmt(gananciaHoyUSD)} USD</p></div>
-        )}
-        {cfg.mostrarInversion !== false && (
-          <div className="kpi" style={{ borderLeftColor: 'var(--err)' }}><div className="kpi-label">🔄 Para Reponer Hoy</div><div className="kpi-value">{fmt(inversionHoyCUP)} CUP</div><p className="equivalent">≈ {fmt(inversionHoyUSD)} USD</p></div>
-        )}
-        <div className="kpi" style={{ borderLeftColor: 'var(--err)' }}><div className="kpi-label">Stock Bajo / Agotados</div><div className="kpi-value">{stockBajo.length + agotados.length}</div></div>
-      </div>
+      {/* Totales combinados CUP + USD */}
+      {(() => {
+        const ventasTotalCUP = totalHoyCUP + (totalHoyUSD * tasa);
+        const ventasTotalUSD = toUSD(ventasTotalCUP, tasa);
+        const reponerTotalCUP = inversionHoyCUP + (inversionHoyUSD * tasa);
+        const reponerTotalUSD = toUSD(reponerTotalCUP, tasa);
+        const gananciaTotalCUP = gananciaHoyCUP + (gananciaHoyUSD * tasa);
+        const gananciaTotalUSD = toUSD(gananciaTotalCUP, tasa);
+        
+        return (
+          <div className="grid-4 mb-6">
+            <div className="kpi"><div className="kpi-label">📊 Ventas Hoy</div><div className="kpi-value">{ventasHoy.length}</div><p className="equivalent">{fmt(ventasTotalCUP)} CUP ≈ {fmt(ventasTotalUSD)} USD</p></div>
+            {cfg.mostrarInversion !== false && (
+              <div className="kpi" style={{ borderLeftColor: 'var(--err)' }}><div className="kpi-label">🔄 Para Reponer</div><div className="kpi-value">{fmt(reponerTotalCUP)} CUP</div><p className="equivalent">≈ {fmt(reponerTotalUSD)} USD</p></div>
+            )}
+            {cfg.mostrarGanancia !== false && (
+              <div className="kpi" style={{ borderLeftColor: 'var(--warn)' }}><div className="kpi-label">💰 Ganancia</div><div className="kpi-value">{fmt(gananciaTotalCUP)} CUP</div><p className="equivalent">≈ {fmt(gananciaTotalUSD)} USD</p><p className="text-xs" style={{ color: 'var(--text2)' }}>(Ventas - Reponer)</p></div>
+            )}
+            <div className="kpi" style={{ borderLeftColor: 'var(--err)' }}><div className="kpi-label">Stock Bajo / Agotados</div><div className="kpi-value">{stockBajo.length + agotados.length}</div></div>
+          </div>
+        );
+      })()}
       
       {/* Desglose de Inventario por Ubicación - ELIMINADO del Dashboard */}
       
@@ -266,31 +278,39 @@ function Dashboard({ cfg, setPage }: { cfg: Record<string, any>; setPage: (p: Pa
             <h3 className="font-semibold">📊 Cierre del Día</h3>
             <span className="text-xs" style={{ color: 'var(--text2)' }}>{fmtDate(today.getTime())}</span>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div>
-              <p className="text-xs" style={{ color: 'var(--text2)' }}>Total Ventas</p>
-              <p className="text-lg font-bold">{fmt(totalHoyCUP)} CUP</p>
-              <p className="text-xs">{fmt(totalHoyUSD)} USD</p>
-            </div>
-            {cfg.mostrarInversion !== false && (
-              <div>
-                <p className="text-xs" style={{ color: 'var(--text2)' }}>🔄 Para Reponer</p>
-                <p className="text-lg font-bold" style={{ color: 'var(--err)' }}>{fmt(inversionHoyCUP)} CUP</p>
-                <p className="text-xs">{fmt(inversionHoyUSD)} USD</p>
+          {(() => {
+            const ventasTotalCUP = totalHoyCUP + (totalHoyUSD * tasa);
+            const reponerTotalCUP = inversionHoyCUP + (inversionHoyUSD * tasa);
+            const gananciaTotalCUP = gananciaHoyCUP + (gananciaHoyUSD * tasa);
+            
+            return (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <p className="text-xs" style={{ color: 'var(--text2)' }}>Total Ventas</p>
+                  <p className="text-lg font-bold">{fmt(ventasTotalCUP)} CUP</p>
+                  <p className="text-xs">≈ {fmt(toUSD(ventasTotalCUP, tasa))} USD</p>
+                </div>
+                {cfg.mostrarInversion !== false && (
+                  <div>
+                    <p className="text-xs" style={{ color: 'var(--text2)' }}>🔄 Para Reponer</p>
+                    <p className="text-lg font-bold" style={{ color: 'var(--err)' }}>{fmt(reponerTotalCUP)} CUP</p>
+                    <p className="text-xs">≈ {fmt(toUSD(reponerTotalCUP, tasa))} USD</p>
+                  </div>
+                )}
+                {cfg.mostrarGanancia !== false && (
+                  <div>
+                    <p className="text-xs" style={{ color: 'var(--text2)' }}>💰 Ganancia</p>
+                    <p className="text-lg font-bold" style={{ color: 'var(--ok)' }}>{fmt(gananciaTotalCUP)} CUP</p>
+                    <p className="text-xs">≈ {fmt(toUSD(gananciaTotalCUP, tasa))} USD</p>
+                  </div>
+                )}
+                <div>
+                  <p className="text-xs" style={{ color: 'var(--text2)' }}>Ventas Realizadas</p>
+                  <p className="text-lg font-bold">{ventasHoy.length}</p>
+                </div>
               </div>
-            )}
-            {cfg.mostrarGanancia !== false && (
-              <div>
-                <p className="text-xs" style={{ color: 'var(--text2)' }}>Ganancia</p>
-                <p className="text-lg font-bold" style={{ color: 'var(--ok)' }}>{fmt(gananciaHoyCUP)} CUP</p>
-                <p className="text-xs">{fmt(gananciaHoyUSD)} USD</p>
-              </div>
-            )}
-            <div>
-              <p className="text-xs" style={{ color: 'var(--text2)' }}>Ventas Realizadas</p>
-              <p className="text-lg font-bold">{ventasHoy.length}</p>
-            </div>
-          </div>
+            );
+          })()}
         </div>
       )}
       
@@ -1190,16 +1210,26 @@ function Sales({ cfg }: { cfg: Record<string, any> }) {
         </div>
       )}
 
-      <div className="grid-4 mb-4">
-        <div className="kpi"><div className="kpi-label">Ventas Hoy</div><div className="kpi-value">{ventasHoy.length}</div></div>
-        {cfg.mostrarGanancia !== false && (
-          <div className="kpi" style={{ borderLeftColor: 'var(--warn)' }}><div className="kpi-label">💰 Ganancia Hoy</div><div className="kpi-value">{fmt(gananciaHoyCUP)} CUP</div><p className="equivalent">≈ {fmt(gananciaHoyUSD)} USD</p></div>
-        )}
-        {cfg.mostrarInversion !== false && (
-          <div className="kpi" style={{ borderLeftColor: 'var(--err)' }}><div className="kpi-label">🔄 Para Reponer Hoy</div><div className="kpi-value">{fmt(inversionHoyCUP)} CUP</div><p className="equivalent">≈ {fmt(inversionHoyUSD)} USD</p></div>
-        )}
-        <div className="kpi" style={{ borderLeftColor: 'var(--info)' }}><div className="kpi-label">Total Rango</div><div className="kpi-value">{fmt(totalRangoCUP)}</div><p className="equivalent">USD: {fmt(totalRangoUSD)}</p></div>
-      </div>
+      {/* Totales combinados CUP + USD */}
+      {(() => {
+        const ventasTotalCUP = ventasHoy.reduce((s, v) => s + v.totalCUP + (v.totalUSD * tasa), 0);
+        const reponerTotalCUP = inversionHoyCUP + (inversionHoyUSD * tasa);
+        const gananciaTotalCUP = gananciaHoyCUP + (gananciaHoyUSD * tasa);
+        const rangoTotalCUP = totalRangoCUP + (totalRangoUSD * tasa);
+        
+        return (
+          <div className="grid-4 mb-4">
+            <div className="kpi"><div className="kpi-label">📊 Ventas Hoy</div><div className="kpi-value">{ventasHoy.length}</div><p className="equivalent">{fmt(ventasTotalCUP)} CUP ≈ {fmt(toUSD(ventasTotalCUP, tasa))} USD</p></div>
+            {cfg.mostrarInversion !== false && (
+              <div className="kpi" style={{ borderLeftColor: 'var(--err)' }}><div className="kpi-label">🔄 Para Reponer</div><div className="kpi-value">{fmt(reponerTotalCUP)} CUP</div><p className="equivalent">≈ {fmt(toUSD(reponerTotalCUP, tasa))} USD</p></div>
+            )}
+            {cfg.mostrarGanancia !== false && (
+              <div className="kpi" style={{ borderLeftColor: 'var(--warn)' }}><div className="kpi-label">💰 Ganancia</div><div className="kpi-value">{fmt(gananciaTotalCUP)} CUP</div><p className="equivalent">≈ {fmt(toUSD(gananciaTotalCUP, tasa))} USD</p></div>
+            )}
+            <div className="kpi" style={{ borderLeftColor: 'var(--info)' }}><div className="kpi-label">Total Rango</div><div className="kpi-value">{fmt(rangoTotalCUP)} CUP</div><p className="equivalent">≈ {fmt(toUSD(rangoTotalCUP, tasa))} USD</p></div>
+          </div>
+        );
+      })()}
       
       {/* Desglose de Pagos Hoy */}
       {cfg.mostrarDesglosePagos !== false && (
@@ -1267,46 +1297,48 @@ function DailyClose({ cfg }: { cfg: Record<string, any> }) {
             <tr>
               <th>Fecha</th>
               <th>Ventas</th>
-              <th>Total CUP</th>
-              <th>Total USD</th>
-              <th>Inversión</th>
-              <th>Ganancia CUP</th>
-              <th>Ganancia USD</th>
+              <th>Total (CUP+USD)</th>
+              <th>🔄 Para Reponer</th>
+              <th>💰 Ganancia</th>
               <th>Efectivo</th>
               <th>Transferencia</th>
               <th>Crédito</th>
             </tr>
           </thead>
           <tbody>
-            {[...cierresDiarios].sort((a, b) => b.fecha - a.fecha).map(c => (
-              <tr key={c.id}>
-                <td className="text-xs">{fmtDate(c.fecha)}</td>
-                <td>{c.ventasIds.length}</td>
-                <td className="font-semibold">{fmt(c.totalVentasCUP)}</td>
-                <td>{fmt(c.totalVentasUSD)}</td>
-                <td style={{ color: 'var(--err)' }}>{fmt(c.costoVentasCUP)}</td>
-                <td style={{ color: 'var(--ok)' }} className="font-bold">{fmt(c.gananciaBrutaCUP)}</td>
-                <td>{fmt(c.gananciaBrutaUSD)}</td>
-                <td>
-                  <div className="text-xs">
-                    <div>{fmt(c.efectivoCUP)} CUP</div>
-                    <div>{fmt(c.efectivoUSD)} USD</div>
-                  </div>
-                </td>
-                <td>
-                  <div className="text-xs">
-                    <div>{fmt(c.transferenciaCUP)} CUP</div>
-                    <div>{fmt(c.transferenciaUSD)} USD</div>
-                  </div>
-                </td>
-                <td>
-                  <div className="text-xs">
-                    <div>{fmt(c.creditoCUP)} CUP</div>
-                    <div>{fmt(c.creditoUSD)} USD</div>
-                  </div>
-                </td>
-              </tr>
-            ))}
+            {[...cierresDiarios].sort((a, b) => b.fecha - a.fecha).map(c => {
+              const totalCombinado = c.totalVentasCUP + (c.totalVentasUSD * tasa);
+              const reponerCombinado = c.costoVentasCUP + (c.costoVentasUSD * tasa);
+              const gananciaCombinada = c.gananciaBrutaCUP + (c.gananciaBrutaUSD * tasa);
+              
+              return (
+                <tr key={c.id}>
+                  <td className="text-xs">{fmtDate(c.fecha)}</td>
+                  <td>{c.ventasIds.length}</td>
+                  <td className="font-semibold">{fmt(totalCombinado)} CUP</td>
+                  <td style={{ color: 'var(--err)' }}>{fmt(reponerCombinado)} CUP</td>
+                  <td style={{ color: 'var(--ok)' }} className="font-bold">{fmt(gananciaCombinada)} CUP</td>
+                  <td>
+                    <div className="text-xs">
+                      <div>{fmt(c.efectivoCUP)} CUP</div>
+                      <div>{fmt(c.efectivoUSD)} USD</div>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="text-xs">
+                      <div>{fmt(c.transferenciaCUP)} CUP</div>
+                      <div>{fmt(c.transferenciaUSD)} USD</div>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="text-xs">
+                      <div>{fmt(c.creditoCUP)} CUP</div>
+                      <div>{fmt(c.creditoUSD)} USD</div>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -1398,25 +1430,35 @@ function WeeklyClose({ cfg }: { cfg: Record<string, any> }) {
         <p className="text-xs" style={{ color: 'var(--text2)' }}>{ventasSemana.length} ventas realizadas</p>
       </div>
 
-      <div className="grid-4 mb-6">
-        <div className="kpi"><div className="kpi-label">Venta Total CUP</div><div className="kpi-value">{fmt(totalCUP)}</div><p className="equivalent">≈ {fmt(toUSD(totalCUP, tasa))} USD</p></div>
-        <div className="kpi" style={{ borderLeftColor: 'var(--info)' }}><div className="kpi-label">Venta Total USD</div><div className="kpi-value">{fmt(totalUSD)}</div></div>
-        {cfg.mostrarGanancia !== false && (
-          <div className="kpi" style={{ borderLeftColor: 'var(--warn)' }}><div className="kpi-label">💰 Ganancia Bruta</div><div className="kpi-value">{fmt(ganancia)} CUP</div><p className="equivalent">≈ {fmt(gananciaUSD)} USD</p></div>
-        )}
-        {cfg.mostrarInversion !== false && (
-          <div className="kpi" style={{ borderLeftColor: 'var(--err)' }}><div className="kpi-label">🔄 Para Reponer Semana</div><div className="kpi-value">{fmt(inversionSemana)} CUP</div><p className="equivalent">≈ {fmt(inversionSemanaUSD)} USD</p></div>
-        )}
-      </div>
+      {/* Totales combinados CUP + USD */}
+      {(() => {
+        const ventasTotalCUP = totalCUP + (totalUSD * tasa);
+        const reponerTotalCUP = inversionSemana + (inversionSemanaUSD * tasa);
+        const gananciaTotalCUP = ganancia + (gananciaUSD * tasa);
+        
+        return (
+          <>
+            <div className="grid-3 mb-6">
+              <div className="kpi"><div className="kpi-label">📊 Ventas Semana</div><div className="kpi-value">{ventasSemana.length}</div><p className="equivalent">{fmt(ventasTotalCUP)} CUP ≈ {fmt(toUSD(ventasTotalCUP, tasa))} USD</p></div>
+              {cfg.mostrarInversion !== false && (
+                <div className="kpi" style={{ borderLeftColor: 'var(--err)' }}><div className="kpi-label">🔄 Para Reponer</div><div className="kpi-value">{fmt(reponerTotalCUP)} CUP</div><p className="equivalent">≈ {fmt(toUSD(reponerTotalCUP, tasa))} USD</p></div>
+              )}
+              {cfg.mostrarGanancia !== false && (
+                <div className="kpi" style={{ borderLeftColor: 'var(--warn)' }}><div className="kpi-label">💰 Ganancia Bruta</div><div className="kpi-value">{fmt(gananciaTotalCUP)} CUP</div><p className="equivalent">≈ {fmt(toUSD(gananciaTotalCUP, tasa))} USD</p></div>
+              )}
+            </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        {cfg.mostrarGanancia !== false && (
-          <div className="kpi" style={{ borderLeftColor: utilidad >= 0 ? 'var(--ok)' : 'var(--err)' }}><div className="kpi-label">💰 Ganancia Neta</div><div className="kpi-value">{fmt(utilidad)} CUP</div><p className="equivalent">(Ganancia - Gastos {fmt(gastosTotal)})</p></div>
-        )}
-        {(cfg.mostrarCajaCUP !== false || cfg.mostrarCajaUSD !== false) && (
-          <div className="kpi" style={{ borderLeftColor: 'var(--info)' }}><div className="kpi-label">💵 Caja Semanal</div><div className="text-sm font-bold">{fmt(cajaCUP)} CUP</div><div className="text-sm font-bold">{fmt(cajaUSD)} USD</div></div>
-        )}
-      </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              {cfg.mostrarGanancia !== false && (
+                <div className="kpi" style={{ borderLeftColor: utilidad >= 0 ? 'var(--ok)' : 'var(--err)' }}><div className="kpi-label">💰 Ganancia Neta</div><div className="kpi-value">{fmt(utilidad)} CUP</div><p className="equivalent">(Ganancia - Gastos {fmt(gastosTotal)})</p></div>
+              )}
+              {(cfg.mostrarCajaCUP !== false || cfg.mostrarCajaUSD !== false) && (
+                <div className="kpi" style={{ borderLeftColor: 'var(--info)' }}><div className="kpi-label">💵 Caja Semanal</div><div className="text-sm font-bold">{fmt(cajaCUP)} CUP</div><div className="text-sm font-bold">{fmt(cajaUSD)} USD</div></div>
+              )}
+            </div>
+          </>
+        );
+      })()}
       
       {/* Desglose de Pagos de la Semana */}
       {cfg.mostrarDesglosePagos !== false && (
@@ -1682,28 +1724,33 @@ function Metrics({ cfg }: { cfg: Record<string, any> }) {
   return (
     <div>
       <div className="card p-4 mb-4" style={{ borderLeft: '4px solid var(--primary)' }}><p className="text-sm font-semibold">📅 Semana: {week.startStr} - {week.endStr}</p></div>
-      <div className="grid-4 mb-6">
-        <div className="kpi"><div className="kpi-label">Venta CUP</div><div className="kpi-value">{fmt(totalCUP)}</div></div>
-        <div className="kpi" style={{ borderLeftColor: 'var(--info)' }}><div className="kpi-label">Venta USD</div><div className="kpi-value">{fmt(totalUSD)}</div></div>
-        {cfg.mostrarGanancia !== false && (
-          <div className="kpi" style={{ borderLeftColor: 'var(--warn)' }}><div className="kpi-label">Ganancia</div><div className="kpi-value">{fmt(ganancia)}</div></div>
-        )}
-        {cfg.mostrarInversion !== false && (
-          <div className="kpi" style={{ borderLeftColor: 'var(--err)' }}><div className="kpi-label">🔄 Para Reponer</div><div className="kpi-value">{fmt(inversion)}</div><p className="equivalent">≈ {fmt(toUSD(inversion, tasa))} USD</p></div>
-        )}
-      </div>
-      <div className="grid-3 mb-6">
-        {cfg.mostrarGanancia !== false && (
-          <div className="kpi" style={{ borderLeftColor: utilidad >= 0 ? 'var(--ok)' : 'var(--err)' }}><div className="kpi-label">Ganancia Neta</div><div className="kpi-value">{fmt(utilidad)}</div></div>
-        )}
-        {cfg.mostrarDistribucionGanancias !== false && (
-          <>
-            <div className="kpi" style={{ borderLeftColor: 'var(--primary)' }}><div className="kpi-label">{cfg.accionista1Nombre || 'Accionista 1'} (50%)</div><div className="kpi-value">{fmt(accionista1)}</div></div>
-            <div className="kpi" style={{ borderLeftColor: 'var(--ok)' }}><div className="kpi-label">{cfg.accionista2Nombre || 'Accionista 2'} (50%)</div><div className="kpi-value">{fmt(accionista2)}</div>{pctDep > 0 && <p className="text-xs">Dep: -{fmt(dependienta)} | Neto: {fmt(accionista2 - dependienta)}</p>}</div>
-          </>
-        )}
-      </div>
-      {cfg.mostrarDistribucionGanancias !== false && pctDep > 0 && (<div className="kpi mb-6" style={{ borderLeftColor: 'var(--warn)' }}><div className="kpi-label">💁 {cfg.dependientaNombre || 'Dependienta'} ({pctDep}% del Acc. 2)</div><div className="kpi-value">{fmt(dependienta)} CUP</div></div>)}
+      
+      {/* Totales combinados CUP + USD */}
+      {(() => {
+        const ventasTotalCUP = totalCUP + (totalUSD * tasa);
+        
+        return (
+          <div className="grid-3 mb-6">
+            <div className="kpi"><div className="kpi-label">📊 Ventas</div><div className="kpi-value">{ventasSemana.length}</div><p className="equivalent">{fmt(ventasTotalCUP)} CUP ≈ {fmt(toUSD(ventasTotalCUP, tasa))} USD</p></div>
+            {cfg.mostrarGanancia !== false && (
+              <div className="kpi" style={{ borderLeftColor: 'var(--warn)' }}><div className="kpi-label">💰 Ganancia</div><div className="kpi-value">{fmt(ganancia)}</div><p className="equivalent">≈ {fmt(toUSD(ganancia, tasa))} USD</p></div>
+            )}
+            {cfg.mostrarGanancia !== false && (
+              <div className="kpi" style={{ borderLeftColor: utilidad >= 0 ? 'var(--ok)' : 'var(--err)' }}><div className="kpi-label">💰 Ganancia Neta</div><div className="kpi-value">{fmt(utilidad)}</div><p className="equivalent">(Ganancia - Gastos)</p></div>
+            )}
+          </div>
+        );
+      })()}
+      
+      {cfg.mostrarDistribucionGanancias !== false && (
+        <div className="grid-3 mb-6">
+          <div className="kpi" style={{ borderLeftColor: 'var(--primary)' }}><div className="kpi-label">{cfg.accionista1Nombre || 'Accionista 1'} (50%)</div><div className="kpi-value">{fmt(accionista1)}</div></div>
+          <div className="kpi" style={{ borderLeftColor: 'var(--ok)' }}><div className="kpi-label">{cfg.accionista2Nombre || 'Accionista 2'} (50%)</div><div className="kpi-value">{fmt(accionista2)}</div>{pctDep > 0 && <p className="text-xs">Dep: -{fmt(dependienta)} | Neto: {fmt(accionista2 - dependienta)}</p>}</div>
+          {pctDep > 0 && (
+            <div className="kpi" style={{ borderLeftColor: 'var(--warn)' }}><div className="kpi-label">💁 {cfg.dependientaNombre || 'Dependienta'} ({pctDep}% del Acc. 2)</div><div className="kpi-value">{fmt(dependienta)} CUP</div></div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
