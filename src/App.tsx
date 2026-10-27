@@ -838,8 +838,9 @@ function POS({ cfg }: { cfg: Record<string, any> }) {
     setCart(cart.map(c => c.productoId === pid ? { ...c, cantidad: qty, subtotalCUP: qty * c.precioCUP, subtotalUSD: qty * c.precioUSD } : c));
   };
 
-  const subTotalCUP = cart.reduce((s, c) => s + c.subtotalCUP, 0);
-  const subTotalUSD = cart.reduce((s, c) => s + c.subtotalUSD, 0);
+  // Calcular subtotales según la moneda seleccionada
+  const subTotalCUP = moneda === 'CUP' ? cart.reduce((s, c) => s + c.subtotalCUP, 0) : 0;
+  const subTotalUSD = moneda === 'USD' ? cart.reduce((s, c) => s + c.subtotalUSD, 0) : 0;
   const totalCUP = subTotalCUP * (1 - descuento / 100);
   const totalUSD = subTotalUSD * (1 - descuento / 100);
   const totalMoneda = moneda === 'CUP' ? totalCUP : totalUSD;
@@ -883,10 +884,10 @@ function POS({ cfg }: { cfg: Record<string, any> }) {
     if (tienePagarTarde && !clienteId) { showToast('Seleccione cliente para "Pagar más tarde"', 'err'); return; }
     for (const item of cart) { const pr = productos.find(x => x.id === item.productoId); if (!pr || (pr.stockTienda || 0) < item.cantidad) { showToast(`Stock insuficiente en tienda: ${item.nombre}`, 'err'); return; } }
 
-    // Calcular costo real usando FIFO
+    // Calcular costo real usando FIFO (solo en la moneda seleccionada)
     const lotes = await dbGetAll<LoteCompra>('lotesCompra');
-    let costoTotalCUP = 0;
-    let costoTotalUSD = 0;
+    let costoTotalCUP = moneda === 'CUP' ? 0 : 0;
+    let costoTotalUSD = moneda === 'USD' ? 0 : 0;
     
     const venta: Venta = {
       num: genVentaNum(), fecha: Date.now(), items: cart, descuento,
@@ -913,8 +914,13 @@ function POS({ cfg }: { cfg: Record<string, any> }) {
         if (cantidadRestante <= 0) break;
         
         const usarDelLote = Math.min(cantidadRestante, lote.cantidadRestante);
-        costoTotalCUP += usarDelLote * lote.precioCompraCUP;
-        costoTotalUSD += usarDelLote * lote.precioCompraUSD;
+        
+        // Solo calcular costo en la moneda seleccionada
+        if (moneda === 'CUP') {
+          costoTotalCUP += usarDelLote * lote.precioCompraCUP;
+        } else {
+          costoTotalUSD += usarDelLote * lote.precioCompraUSD;
+        }
         
         lote.cantidadRestante -= usarDelLote;
         cantidadRestante -= usarDelLote;
