@@ -910,24 +910,36 @@ function POS({ cfg }: { cfg: Record<string, any> }) {
         .sort((a, b) => a.fecha - b.fecha);
       
       let cantidadRestante = item.cantidad;
-      for (const lote of lotesProducto) {
-        if (cantidadRestante <= 0) break;
-        
-        const usarDelLote = Math.min(cantidadRestante, lote.cantidadRestante);
-        
-        // Solo calcular costo en la moneda seleccionada
+      
+      // Si no hay lotes, usar el PEP del producto como costo
+      if (lotesProducto.length === 0) {
         if (moneda === 'CUP') {
-          costoTotalCUP += usarDelLote * lote.precioCompraCUP;
+          costoTotalCUP += item.cantidad * (pr.pep || 0);
         } else {
-          // Si el lote no tiene precioCompraUSD, calcularlo desde precioCompraCUP
-          const precioUSD = lote.precioCompraUSD > 0 ? lote.precioCompraUSD : toUSD(lote.precioCompraCUP, tasa);
-          costoTotalUSD += usarDelLote * precioUSD;
+          const precioUSD = pr.pepUSD > 0 ? pr.pepUSD : toUSD(pr.pep || 0, tasa);
+          costoTotalUSD += item.cantidad * precioUSD;
         }
-        
-        lote.cantidadRestante -= usarDelLote;
-        cantidadRestante -= usarDelLote;
-        
-        await dbPut('lotesCompra', lote);
+      } else {
+        // Si hay lotes, usar FIFO
+        for (const lote of lotesProducto) {
+          if (cantidadRestante <= 0) break;
+          
+          const usarDelLote = Math.min(cantidadRestante, lote.cantidadRestante);
+          
+          // Solo calcular costo en la moneda seleccionada
+          if (moneda === 'CUP') {
+            costoTotalCUP += usarDelLote * lote.precioCompraCUP;
+          } else {
+            // Si el lote no tiene precioCompraUSD, calcularlo desde precioCompraCUP
+            const precioUSD = lote.precioCompraUSD > 0 ? lote.precioCompraUSD : toUSD(lote.precioCompraCUP, tasa);
+            costoTotalUSD += usarDelLote * precioUSD;
+          }
+          
+          lote.cantidadRestante -= usarDelLote;
+          cantidadRestante -= usarDelLote;
+          
+          await dbPut('lotesCompra', lote);
+        }
       }
       
       await dbPut('productos', { ...pr, stock: newStockTienda + newStockAlmacen, stockTienda: newStockTienda, stockAlmacen: newStockAlmacen }); 
