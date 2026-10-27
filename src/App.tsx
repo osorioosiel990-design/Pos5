@@ -226,31 +226,12 @@ function Dashboard({ cfg, setPage }: { cfg: Record<string, any>; setPage: (p: Pa
           <div className="kpi" style={{ borderLeftColor: 'var(--warn)' }}><div className="kpi-label">💰 Ganancia Hoy</div><div className="kpi-value">{fmt(gananciaHoyCUP)} CUP</div><p className="equivalent">≈ {fmt(gananciaHoyUSD)} USD</p></div>
         )}
         {cfg.mostrarInversion !== false && (
-          <div className="kpi" style={{ borderLeftColor: 'var(--err)' }}><div className="kpi-label">💸 Inversión Hoy (Costo)</div><div className="kpi-value">{fmt(inversionHoyCUP)} CUP</div><p className="equivalent">≈ {fmt(inversionHoyUSD)} USD</p></div>
+          <div className="kpi" style={{ borderLeftColor: 'var(--err)' }}><div className="kpi-label">🔄 Para Reponer Hoy</div><div className="kpi-value">{fmt(inversionHoyCUP)} CUP</div><p className="equivalent">≈ {fmt(inversionHoyUSD)} USD</p></div>
         )}
         <div className="kpi" style={{ borderLeftColor: 'var(--err)' }}><div className="kpi-label">Stock Bajo / Agotados</div><div className="kpi-value">{stockBajo.length + agotados.length}</div></div>
       </div>
       
-      {/* Desglose de Inventario por Ubicación */}
-      {cfg.mostrarInventarioPorUbicacion !== false && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="kpi" style={{ borderLeftColor: 'var(--ok)' }}>
-            <div className="kpi-label">🏪 Inventario en Tienda</div>
-            <div className="kpi-value">{fmt(inversionTiendaCUP)} CUP</div>
-            <p className="equivalent">Disponible para venta</p>
-          </div>
-          <div className="kpi" style={{ borderLeftColor: 'var(--info)' }}>
-            <div className="kpi-label">📦 Inventario en Almacén</div>
-            <div className="kpi-value">{fmt(inversionAlmacenCUP)} CUP</div>
-            <p className="equivalent">Requiere transferencia</p>
-          </div>
-          <div className="kpi" style={{ borderLeftColor: 'var(--primary)' }}>
-            <div className="kpi-label">💰 Inversión Total</div>
-            <div className="kpi-value">{fmt(inversionTotalCUP)} CUP</div>
-            <p className="equivalent">≈ {fmt(inversionTotalUSD)} USD</p>
-          </div>
-        </div>
-      )}
+      {/* Desglose de Inventario por Ubicación - ELIMINADO del Dashboard */}
       
       {/* Desglose de Pagos Hoy */}
       {cfg.mostrarDesglosePagos !== false && (
@@ -293,7 +274,7 @@ function Dashboard({ cfg, setPage }: { cfg: Record<string, any>; setPage: (p: Pa
             </div>
             {cfg.mostrarInversion !== false && (
               <div>
-                <p className="text-xs" style={{ color: 'var(--text2)' }}>Inversión (Costo)</p>
+                <p className="text-xs" style={{ color: 'var(--text2)' }}>🔄 Para Reponer</p>
                 <p className="text-lg font-bold" style={{ color: 'var(--err)' }}>{fmt(inversionHoyCUP)} CUP</p>
                 <p className="text-xs">{fmt(inversionHoyUSD)} USD</p>
               </div>
@@ -1215,7 +1196,7 @@ function Sales({ cfg }: { cfg: Record<string, any> }) {
           <div className="kpi" style={{ borderLeftColor: 'var(--warn)' }}><div className="kpi-label">💰 Ganancia Hoy</div><div className="kpi-value">{fmt(gananciaHoyCUP)} CUP</div><p className="equivalent">≈ {fmt(gananciaHoyUSD)} USD</p></div>
         )}
         {cfg.mostrarInversion !== false && (
-          <div className="kpi" style={{ borderLeftColor: 'var(--err)' }}><div className="kpi-label">💸 Inversión Hoy</div><div className="kpi-value">{fmt(inversionHoyCUP)} CUP</div><p className="equivalent">≈ {fmt(inversionHoyUSD)} USD</p></div>
+          <div className="kpi" style={{ borderLeftColor: 'var(--err)' }}><div className="kpi-label">🔄 Para Reponer Hoy</div><div className="kpi-value">{fmt(inversionHoyCUP)} CUP</div><p className="equivalent">≈ {fmt(inversionHoyUSD)} USD</p></div>
         )}
         <div className="kpi" style={{ borderLeftColor: 'var(--info)' }}><div className="kpi-label">Total Rango</div><div className="kpi-value">{fmt(totalRangoCUP)}</div><p className="equivalent">USD: {fmt(totalRangoUSD)}</p></div>
       </div>
@@ -1424,14 +1405,11 @@ function WeeklyClose({ cfg }: { cfg: Record<string, any> }) {
           <div className="kpi" style={{ borderLeftColor: 'var(--warn)' }}><div className="kpi-label">💰 Ganancia Bruta</div><div className="kpi-value">{fmt(ganancia)} CUP</div><p className="equivalent">≈ {fmt(gananciaUSD)} USD</p></div>
         )}
         {cfg.mostrarInversion !== false && (
-          <div className="kpi" style={{ borderLeftColor: 'var(--err)' }}><div className="kpi-label">💸 Inversión (Costo)</div><div className="kpi-value">{fmt(inversionSemana)} CUP</div><p className="equivalent">≈ {fmt(inversionSemanaUSD)} USD</p></div>
+          <div className="kpi" style={{ borderLeftColor: 'var(--err)' }}><div className="kpi-label">🔄 Para Reponer Semana</div><div className="kpi-value">{fmt(inversionSemana)} CUP</div><p className="equivalent">≈ {fmt(inversionSemanaUSD)} USD</p></div>
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        {cfg.mostrarInventarioPorUbicacion !== false && (
-          <div className="kpi" style={{ borderLeftColor: 'var(--ok)' }}><div className="kpi-label">💰 Inventario Actual</div><div className="kpi-value">{fmt(inversionCUP)} CUP</div><p className="equivalent">≈ {fmt(inversionUSD)} USD</p></div>
-        )}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         {cfg.mostrarGanancia !== false && (
           <div className="kpi" style={{ borderLeftColor: utilidad >= 0 ? 'var(--ok)' : 'var(--err)' }}><div className="kpi-label">💰 Ganancia Neta</div><div className="kpi-value">{fmt(utilidad)} CUP</div><p className="equivalent">(Ganancia - Gastos {fmt(gastosTotal)})</p></div>
         )}
@@ -1711,7 +1689,7 @@ function Metrics({ cfg }: { cfg: Record<string, any> }) {
           <div className="kpi" style={{ borderLeftColor: 'var(--warn)' }}><div className="kpi-label">Ganancia</div><div className="kpi-value">{fmt(ganancia)}</div></div>
         )}
         {cfg.mostrarInversion !== false && (
-          <div className="kpi" style={{ borderLeftColor: 'var(--err)' }}><div className="kpi-label">Inversión Inv.</div><div className="kpi-value">{fmt(inversion)}</div><p className="equivalent">≈ {fmt(toUSD(inversion, tasa))} USD</p></div>
+          <div className="kpi" style={{ borderLeftColor: 'var(--err)' }}><div className="kpi-label">🔄 Para Reponer</div><div className="kpi-value">{fmt(inversion)}</div><p className="equivalent">≈ {fmt(toUSD(inversion, tasa))} USD</p></div>
         )}
       </div>
       <div className="grid-3 mb-6">
