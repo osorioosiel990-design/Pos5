@@ -314,7 +314,7 @@ function Dashboard({ cfg, setPage }: { cfg: Record<string, any>; setPage: (p: Pa
         </div>
       )}
       
-      <div className="card p-4">
+      <div className="card p-4 mb-6">
         <h3 className="font-semibold mb-3">Alertas</h3>
         <div className="space-y-2">
           {agotados.length > 0 && <div className="p-2 rounded cursor-pointer" style={{ background: '#fee2e2' }} onClick={() => setPage('inventory')}><span className="text-sm text-red-700">🔴 {agotados.length} productos agotados en tienda</span></div>}
@@ -324,6 +324,121 @@ function Dashboard({ cfg, setPage }: { cfg: Record<string, any>; setPage: (p: Pa
           {agotados.length === 0 && stockBajo.length === 0 && anulPend.length === 0 && clientesSaldo.length === 0 && <p className="text-sm" style={{ color: 'var(--text2)' }}>✅ Sin alertas</p>}
         </div>
       </div>
+
+      {/* Métricas adicionales basadas en cierres */}
+      {(() => {
+        // Productos más vendidos (últimos 7 días)
+        const hace7Dias = new Date();
+        hace7Dias.setDate(hace7Dias.getDate() - 7);
+        hace7Dias.setHours(0, 0, 0, 0);
+        
+        const ventas7Dias = ventas.filter(v => v.fecha >= hace7Dias.getTime() && v.estado === 'pagada');
+        
+        // Calcular productos más vendidos
+        const productosVendidos: Record<number, { nombre: string; cantidad: number; ventas: number; ganancia: number }> = {};
+        ventas7Dias.forEach(v => {
+          v.items.forEach(item => {
+            if (!productosVendidos[item.productoId]) {
+              productosVendidos[item.productoId] = { nombre: item.nombre, cantidad: 0, ventas: 0, ganancia: 0 };
+            }
+            productosVendidos[item.productoId].cantidad += item.cantidad;
+            productosVendidos[item.productoId].ventas += item.subtotalCUP;
+            const gananciaItem = (item.precioCUP - item.pep) * item.cantidad * (1 - v.descuento / 100);
+            productosVendidos[item.productoId].ganancia += gananciaItem;
+          });
+        });
+        
+        const topVentas = Object.entries(productosVendidos)
+          .sort((a, b) => b[1].cantidad - a[1].cantidad)
+          .slice(0, 5);
+        
+        const topGanancia = Object.entries(productosVendidos)
+          .sort((a, b) => b[1].ganancia - a[1].ganancia)
+          .slice(0, 5);
+        
+        // Comparación con ayer
+        const ayer = new Date();
+        ayer.setDate(ayer.getDate() - 1);
+        ayer.setHours(0, 0, 0, 0);
+        const cierreAyer = cierresDiarios.find(c => c.fecha === ayer.getTime());
+        const ventasAyer = cierreAyer ? cierreAyer.totalVentasCUP + (cierreAyer.totalVentasUSD * tasa) : 0;
+        const ventasHoyTotal = totalHoyCUP + (totalHoyUSD * tasa);
+        const cambioPorcentaje = ventasAyer > 0 ? ((ventasHoyTotal - ventasAyer) / ventasAyer) * 100 : 0;
+        
+        return (
+          <>
+            {/* Tendencia */}
+            {ventasAyer > 0 && (
+              <div className="card p-4 mb-6">
+                <h3 className="font-semibold mb-3">📈 Tendencia vs Ayer</h3>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm" style={{ color: 'var(--text2)' }}>Ventas ayer</p>
+                    <p className="text-lg font-bold">{fmt(ventasAyer)} CUP</p>
+                  </div>
+                  <div className="text-4xl">{cambioPorcentaje >= 0 ? '📈' : '📉'}</div>
+                  <div className="text-right">
+                    <p className="text-sm" style={{ color: 'var(--text2)' }}>Ventas hoy</p>
+                    <p className="text-lg font-bold">{fmt(ventasHoyTotal)} CUP</p>
+                  </div>
+                  <div className={`text-2xl font-bold ${cambioPorcentaje >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {cambioPorcentaje >= 0 ? '+' : ''}{fmt(cambioPorcentaje, 1)}%
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Top productos */}
+            {topVentas.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div className="card p-4">
+                  <h3 className="font-semibold mb-3">🏆 Top 5 Más Vendidos (7 días)</h3>
+                  <div className="space-y-2">
+                    {topVentas.map(([id, data], index) => (
+                      <div key={id} className="flex items-center justify-between p-2 rounded" style={{ background: 'var(--bg3)' }}>
+                        <div className="flex items-center gap-3">
+                          <span className="text-2xl font-bold" style={{ color: index === 0 ? '#fbbf24' : index === 1 ? '#9ca3af' : index === 2 ? '#d97706' : 'var(--text2)' }}>
+                            {index + 1}
+                          </span>
+                          <div>
+                            <p className="font-medium text-sm">{data.nombre}</p>
+                            <p className="text-xs" style={{ color: 'var(--text2)' }}>{data.cantidad} unidades</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-sm">{fmt(data.ventas)} CUP</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="card p-4">
+                  <h3 className="font-semibold mb-3">💰 Top 5 Mayor Ganancia (7 días)</h3>
+                  <div className="space-y-2">
+                    {topGanancia.map(([id, data], index) => (
+                      <div key={id} className="flex items-center justify-between p-2 rounded" style={{ background: 'var(--bg3)' }}>
+                        <div className="flex items-center gap-3">
+                          <span className="text-2xl font-bold" style={{ color: index === 0 ? '#fbbf24' : index === 1 ? '#9ca3af' : index === 2 ? '#d97706' : 'var(--text2)' }}>
+                            {index + 1}
+                          </span>
+                          <div>
+                            <p className="font-medium text-sm">{data.nombre}</p>
+                            <p className="text-xs" style={{ color: 'var(--text2)' }}>{data.cantidad} unidades</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-sm" style={{ color: 'var(--ok)' }}>{fmt(data.ganancia)} CUP</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        );
+      })()}
     </div>
   );
 }
@@ -1894,6 +2009,197 @@ function Metrics({ cfg }: { cfg: Record<string, any> }) {
           )}
         </div>
       )}
+
+      {/* Métricas adicionales del mes */}
+      {(() => {
+        // Productos más vendidos del mes
+        const inicioMes = new Date();
+        inicioMes.setDate(1);
+        inicioMes.setHours(0, 0, 0, 0);
+        
+        const ventasMes = ventas.filter(v => v.fecha >= inicioMes.getTime() && v.estado === 'pagada');
+        
+        const productosMes: Record<number, { nombre: string; cantidad: number; ventas: number; ganancia: number; categoria: string }> = {};
+        ventasMes.forEach(v => {
+          v.items.forEach(item => {
+            if (!productosMes[item.productoId]) {
+              const prod = productos.find(p => p.id === item.productoId);
+              productosMes[item.productoId] = { 
+                nombre: item.nombre, 
+                cantidad: 0, 
+                ventas: 0, 
+                ganancia: 0,
+                categoria: prod?.categoria || 'Sin categoría'
+              };
+            }
+            productosMes[item.productoId].cantidad += item.cantidad;
+            productosMes[item.productoId].ventas += item.subtotalCUP;
+            const gananciaItem = (item.precioCUP - item.pep) * item.cantidad * (1 - v.descuento / 100);
+            productosMes[item.productoId].ganancia += gananciaItem;
+          });
+        });
+        
+        const topVentasMes = Object.entries(productosMes)
+          .sort((a, b) => b[1].cantidad - a[1].cantidad)
+          .slice(0, 10);
+        
+        const topGananciaMes = Object.entries(productosMes)
+          .sort((a, b) => b[1].ganancia - a[1].ganancia)
+          .slice(0, 10);
+        
+        // Categorías más rentables
+        const categoriasMes: Record<string, { ventas: number; ganancia: number }> = {};
+        Object.values(productosMes).forEach(data => {
+          if (!categoriasMes[data.categoria]) {
+            categoriasMes[data.categoria] = { ventas: 0, ganancia: 0 };
+          }
+          categoriasMes[data.categoria].ventas += data.ventas;
+          categoriasMes[data.categoria].ganancia += data.ganancia;
+        });
+        
+        const topCategorias = Object.entries(categoriasMes)
+          .sort((a, b) => b[1].ganancia - a[1].ganancia)
+          .slice(0, 5);
+        
+        // Margen de ganancia promedio
+        const margenPromedio = totalCUP > 0 ? (ganancia / totalCUP) * 100 : 0;
+        
+        // Clientes más frecuentes
+        const clientesFrecuentes: Record<number, { nombre: string; compras: number; total: number }> = {};
+        ventasMes.forEach(v => {
+          if (v.clienteId) {
+            if (!clientesFrecuentes[v.clienteId]) {
+              clientesFrecuentes[v.clienteId] = { nombre: v.clienteNombre, compras: 0, total: 0 };
+            }
+            clientesFrecuentes[v.clienteId].compras += 1;
+            clientesFrecuentes[v.clienteId].total += v.totalCUP;
+          }
+        });
+        
+        const topClientes = Object.entries(clientesFrecuentes)
+          .sort((a, b) => b[1].compras - a[1].compras)
+          .slice(0, 5);
+        
+        return (
+          <>
+            {/* Margen de ganancia */}
+            <div className="card p-4 mb-6">
+              <h3 className="font-semibold mb-3">📊 Margen de Ganancia Promedio</h3>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-3xl font-bold" style={{ color: margenPromedio >= 30 ? 'var(--ok)' : margenPromedio >= 20 ? 'var(--warn)' : 'var(--err)' }}>
+                    {fmt(margenPromedio, 1)}%
+                  </p>
+                  <p className="text-sm" style={{ color: 'var(--text2)' }}>Ganancia / Ventas</p>
+                </div>
+                <div className="text-6xl">
+                  {margenPromedio >= 30 ? '💎' : margenPromedio >= 20 ? '👍' : '⚠️'}
+                </div>
+              </div>
+            </div>
+            
+            {/* Top productos y categorías */}
+            {topVentasMes.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div className="card p-4">
+                  <h3 className="font-semibold mb-3">🏆 Top 10 Más Vendidos (Mes)</h3>
+                  <div className="space-y-2">
+                    {topVentasMes.map(([id, data], index) => (
+                      <div key={id} className="flex items-center justify-between p-2 rounded" style={{ background: 'var(--bg3)' }}>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xl font-bold" style={{ color: index < 3 ? 'var(--warn)' : 'var(--text2)' }}>
+                            {index + 1}
+                          </span>
+                          <div>
+                            <p className="font-medium text-sm">{data.nombre}</p>
+                            <p className="text-xs" style={{ color: 'var(--text2)' }}>{data.cantidad} uds · {data.categoria}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-sm">{fmt(data.ventas)} CUP</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="card p-4">
+                  <h3 className="font-semibold mb-3">💰 Top 10 Mayor Ganancia (Mes)</h3>
+                  <div className="space-y-2">
+                    {topGananciaMes.map(([id, data], index) => (
+                      <div key={id} className="flex items-center justify-between p-2 rounded" style={{ background: 'var(--bg3)' }}>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xl font-bold" style={{ color: index < 3 ? 'var(--warn)' : 'var(--text2)' }}>
+                            {index + 1}
+                          </span>
+                          <div>
+                            <p className="font-medium text-sm">{data.nombre}</p>
+                            <p className="text-xs" style={{ color: 'var(--text2)' }}>{data.cantidad} uds · {data.categoria}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-sm" style={{ color: 'var(--ok)' }}>{fmt(data.ganancia)} CUP</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Categorías y Clientes */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              {topCategorias.length > 0 && (
+                <div className="card p-4">
+                  <h3 className="font-semibold mb-3">📂 Categorías Más Rentables (Mes)</h3>
+                  <div className="space-y-2">
+                    {topCategorias.map(([cat, data], index) => (
+                      <div key={cat} className="flex items-center justify-between p-2 rounded" style={{ background: 'var(--bg3)' }}>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xl font-bold" style={{ color: index < 3 ? 'var(--warn)' : 'var(--text2)' }}>
+                            {index + 1}
+                          </span>
+                          <div>
+                            <p className="font-medium text-sm">{cat}</p>
+                            <p className="text-xs" style={{ color: 'var(--text2)' }}>Ventas: {fmt(data.ventas)} CUP</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-sm" style={{ color: 'var(--ok)' }}>{fmt(data.ganancia)} CUP</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {topClientes.length > 0 && (
+                <div className="card p-4">
+                  <h3 className="font-semibold mb-3">👥 Clientes Más Frecuentes (Mes)</h3>
+                  <div className="space-y-2">
+                    {topClientes.map(([id, data], index) => (
+                      <div key={id} className="flex items-center justify-between p-2 rounded" style={{ background: 'var(--bg3)' }}>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xl font-bold" style={{ color: index < 3 ? 'var(--warn)' : 'var(--text2)' }}>
+                            {index + 1}
+                          </span>
+                          <div>
+                            <p className="font-medium text-sm">{data.nombre}</p>
+                            <p className="text-xs" style={{ color: 'var(--text2)' }}>{data.compras} compras</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-sm">{fmt(data.total)} CUP</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </>
+        );
+      })()}
     </div>
   );
 }
@@ -1973,7 +2279,7 @@ function Backup({ cfg }: { cfg: Record<string, any> }) {
     setImporting(false); e.target.value = '';
   };
 
-  const clearAll = async () => { if (!confirm('⚠️ ¿Borrar TODO?')) return; if (!confirm('¿Seguro?')) return; for (const s of ['productos', 'lotes', 'compras', 'ventas', 'clientes', 'gastos', 'anulaciones', 'tasas', 'cierres']) await dbClear(s); showToast('Eliminado', 'warn'); };
+  const clearAll = async () => { if (!confirm('⚠️ ¿Borrar TODO?')) return; if (!confirm('¿Seguro?')) return; for (const s of ['productos', 'lotesCompra', 'compras', 'ventas', 'clientes', 'gastos', 'anulaciones', 'tasas', 'cierres', 'cierresDiarios', 'transferencias']) await dbClear(s); showToast('Eliminado', 'warn'); };
 
   return (
     <div className="space-y-6">
